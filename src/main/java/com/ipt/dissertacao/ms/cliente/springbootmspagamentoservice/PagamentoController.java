@@ -15,6 +15,8 @@ import com.ipt.dissertacao.ms.cliente.springbootmspagamentoservice.entidades.*;
 public class PagamentoController {
 	@Autowired
 	OrdemPagamentoRepository ordem_repository;
+	@Autowired
+	DICTRepository dict_repository;
 
 	@GetMapping("/pagamentos/cliente/{id_cliente}")
 	public List<OrdemPagamento> pagamentosRecuperarPorCliente(@PathVariable long id_cliente) {
@@ -27,16 +29,18 @@ public class PagamentoController {
 	}
 
 	@PostMapping("/pagamentos")
-	public ResponseEntity<?> pagamentoRegistrar(@RequestBody OrdemPagamento pgto) {
-		if (pgto != null) {
+	public ResponseEntity<?> pagamentoRegistrar(@RequestBody OrdemPagamento op) {
+		if (op != null) {
 
 			try {
-				PagamentoActions.CriarPagamento(pgto);
+				PagamentoActions.CriarPagamento(op);
 
-				ordem_repository.save(pgto);
+				op.setContaDestino(dict_repository.save(op.getContaDestino()));
+				op.setContaOrigem(dict_repository.save(op.getContaOrigem()));
+				OrdemPagamento myOp = ordem_repository.save(op);
 
-				return ResponseEntity.created(new URI(String.format("pagamentos/%d", pgto.getId())))
-						.body("Ordem de pagamento criada");
+				return ResponseEntity.created(new URI(String.format("pagamentos/%d", op.getId())))
+						.body(myOp);
 			} catch (Exception e) {
 				return new ResponseEntity<String>(String.format("Erro no processamento: %s", e.getMessage()),
 						HttpStatus.INTERNAL_SERVER_ERROR);
@@ -53,15 +57,17 @@ public class PagamentoController {
 					HttpStatus.BAD_REQUEST);
 
 		try {
-			OrdemPagamento myPgto = ordem_repository.findById(id_pagamento);
+			OrdemPagamento op = ordem_repository.findById(id_pagamento);
 
-			if (myPgto == null)
+			if (op == null)
 				return new ResponseEntity<String>(String.format("Ordem de pagamento informada não existe"),
 						HttpStatus.NOT_FOUND);
 
-			PagamentoActions.AlterarPagamento(myPgto, pgto);
+			PagamentoActions.AlterarPagamento(op, pgto);
 
-			ordem_repository.save(myPgto);
+			dict_repository.save(op.getContaDestino());
+			dict_repository.save(op.getContaOrigem());
+			ordem_repository.save(op);
 
 			return ResponseEntity.accepted().body("Ordem de pagamento atualizada");
 		} catch (Exception e) {
@@ -82,7 +88,7 @@ public class PagamentoController {
 			PagamentoActions.ExcluirPagamento(pgto);
 
 			ordem_repository.save(pgto);
-			
+
 			return ResponseEntity.accepted().body("Ordem de pagamento cancelada com sucesso");
 
 		} catch (Exception e) {
