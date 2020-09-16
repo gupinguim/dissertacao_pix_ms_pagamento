@@ -27,7 +27,8 @@ public class OrdemPagamento {
 	DICT contaDestino;
 	@Column(name = "id_cliente")
 	long idCliente;
-
+	@Column(name="tipo_pagamento")
+	String tipoPagamento;
 	public long getId() {
 		return id;
 	}
@@ -95,5 +96,13 @@ public class OrdemPagamento {
 	public void copyFrom(OrdemPagamento outraOrdem) {
 		this.dataPagamento = outraOrdem.getDataPagamento();
 		this.tipoSituacaoPagamento = outraOrdem.getTipoSituacaoPagamento();
+	}
+
+	public String getTipoPagamento() {
+		return tipoPagamento;
+	}
+
+	public void setTipoPagamento(String tipoPagamento) {
+		this.tipoPagamento = tipoPagamento;
 	}
 }
