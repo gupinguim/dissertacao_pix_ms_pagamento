@@ -11,10 +11,10 @@ public class PagamentoActions {
 	}
 
 	public static void AlterarPagamento(OrdemPagamento pgto_from, OrdemPagamento pgto_to) {
-
+		pgto_from.setTipoSituacaoPagamento(pgto_to.getTipoSituacaoPagamento());
 	}
 
 	public static void ExcluirPagamento(OrdemPagamento pgto) {
-
+		pgto.setTipoSituacaoPagamento("Cancelado");
 	}
 }

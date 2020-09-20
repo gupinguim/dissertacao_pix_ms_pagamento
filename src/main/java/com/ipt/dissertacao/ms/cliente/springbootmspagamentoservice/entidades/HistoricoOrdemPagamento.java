@@ -51,4 +51,16 @@ public class HistoricoOrdemPagamento {
 	public void setOrdem(OrdemPagamento ordem) {
 		this.ordem = ordem;
 	}
+	public HistoricoOrdemPagamento(long id, String tipoSituacaoPagamento, Date dataSituacaoPagamento,
+			String observacoes, OrdemPagamento ordem) {
+		super();
+		this.id = id;
+		this.tipoSituacaoPagamento = tipoSituacaoPagamento;
+		this.dataSituacaoPagamento = dataSituacaoPagamento;
+		this.observacoes = observacoes;
+		this.ordem = ordem;
+	}
+	public HistoricoOrdemPagamento() {
+		super();
+	}
 }

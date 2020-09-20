@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.time.Instant;
 import java.util.*;
 import com.ipt.dissertacao.ms.cliente.springbootmspagamentoservice.repositorios.*;
 import com.ipt.dissertacao.ms.cliente.springbootmspagamentoservice.business.PagamentoActions;
@@ -17,6 +18,9 @@ public class PagamentoController {
 	OrdemPagamentoRepository ordem_repository;
 	@Autowired
 	DICTRepository dict_repository;
+
+	@Autowired
+	HistoricoOrdemPagamentoRepository hist_repository;
 
 	@GetMapping("/pagamentos/cliente/{id_cliente}")
 	public List<OrdemPagamento> pagamentosRecuperarPorCliente(@PathVariable long id_cliente) {
@@ -39,8 +43,7 @@ public class PagamentoController {
 				op.setContaOrigem(dict_repository.save(op.getContaOrigem()));
 				OrdemPagamento myOp = ordem_repository.save(op);
 
-				return ResponseEntity.created(new URI(String.format("pagamentos/%d", op.getId())))
-						.body(myOp);
+				return ResponseEntity.created(new URI(String.format("pagamentos/%d", op.getId()))).body(myOp);
 			} catch (Exception e) {
 				return new ResponseEntity<String>(String.format("Erro no processamento: %s", e.getMessage()),
 						HttpStatus.INTERNAL_SERVER_ERROR);
@@ -51,23 +54,27 @@ public class PagamentoController {
 	}
 
 	@PutMapping("/pagamentos/{id_pagamento}")
-	public ResponseEntity<?> pagamentoAtualizar(@PathVariable long id_pagamento, @RequestBody OrdemPagamento pgto) {
-		if (id_pagamento == 0 || pgto == null)
+	public ResponseEntity<?> pagamentoAtualizar(@PathVariable long id_pagamento, @RequestBody OrdemPagamento pgtoAlteracao) {
+		if (id_pagamento == 0 || pgtoAlteracao == null)
 			return new ResponseEntity<String>(String.format("Favor informar uma ordem de pagamento"),
 					HttpStatus.BAD_REQUEST);
 
 		try {
-			OrdemPagamento op = ordem_repository.findById(id_pagamento);
+			OrdemPagamento pgto = ordem_repository.findById(id_pagamento);
 
-			if (op == null)
+			if (pgto == null)
 				return new ResponseEntity<String>(String.format("Ordem de pagamento informada não existe"),
 						HttpStatus.NOT_FOUND);
 
-			PagamentoActions.AlterarPagamento(op, pgto);
+			HistoricoOrdemPagamento hop = new HistoricoOrdemPagamento(pgto.getId(), pgto.getTipoSituacaoPagamento(),
+					Date.from(Instant.now()), "Mudanca de status", pgto);
 
-			dict_repository.save(op.getContaDestino());
-			dict_repository.save(op.getContaOrigem());
-			ordem_repository.save(op);
+			PagamentoActions.AlterarPagamento(pgto, pgtoAlteracao);
+
+			hist_repository.save(hop);
+			dict_repository.save(pgto.getContaDestino());
+			dict_repository.save(pgto.getContaOrigem());
+			ordem_repository.save(pgto);
 
 			return ResponseEntity.accepted().body("Ordem de pagamento atualizada");
 		} catch (Exception e) {
@@ -85,8 +92,12 @@ public class PagamentoController {
 		try {
 			OrdemPagamento pgto = ordem_repository.findById(id_pagamento);
 
+			HistoricoOrdemPagamento hop = new HistoricoOrdemPagamento(pgto.getId(), pgto.getTipoSituacaoPagamento(),
+					Date.from(Instant.now()), "Mudanca de status", pgto);
+
 			PagamentoActions.ExcluirPagamento(pgto);
 
+			hist_repository.save(hop);
 			ordem_repository.save(pgto);
 
 			return ResponseEntity.accepted().body("Ordem de pagamento cancelada com sucesso");
@@ -97,5 +108,4 @@ public class PagamentoController {
 		}
 
 	}
-
 }
